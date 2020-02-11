@@ -1,0 +1,80 @@
+#include "DHT.h"
+#define BLYNK_PRINT Serial
+#include <SimpleTimer.h>
+ 
+#define kendali1 D6
+#define kendali2 D7
+#define kecepatanMotor D5
+#define lampu D3
+
+#include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
+char auth[] = "XMh5pnDoIWqHAqClqwxHAyC95-Rh7M2D";
+char ssid[] = "IOT"; //SSID wifi mu
+char pass[] = "qwertyui"; //pass wifi mu
+
+#define DHTPIN D4     
+#define DHTTYPE DHT11   
+
+
+DHT dht(DHTPIN, DHTTYPE);
+
+SimpleTimer timer;
+
+void notifyLamp() {
+  if (lampu == LOW) {
+    Blynk.notify("Lampu nyala");
+  }
+}
+
+void setup() {
+  Serial.begin(9600);
+  Serial.println(F("DHTxx test!"));
+  pinMode(lampu, OUTPUT);
+  
+  Serial.begin(9600);
+  Blynk.begin(auth, ssid, pass);
+  dht.begin();
+
+  timer.setInterval(2000, sendUptime);
+  timer.setInterval(16000L, notifyLamp);
+  
+  pinMode(kendali1, OUTPUT);
+  pinMode(kendali2, OUTPUT);
+
+  digitalWrite(kendali1, HIGH);
+  digitalWrite(kendali2, LOW);
+
+}
+void sendUptime(){
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+  if (isnan(h) || isnan(t)) {
+    Serial.println(F("Failed to read from DHT sensor!"));
+    return;
+  }
+  Blynk.virtualWrite(V0, t);
+  Blynk.virtualWrite(V1, h);
+  }
+
+void loop() {
+  int kecepatan = 1023;
+  int berhenti = 0;
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+  
+  
+   Blynk.run();
+   timer.run();
+
+   if(t > 30){
+    analogWrite(kecepatanMotor, kecepatan);
+    delay(1000);
+    digitalWrite(D3, HIGH);
+    delay(2000);
+  }else {
+    digitalWrite(D3, LOW);
+    delay(1000);
+    analogWrite(kecepatanMotor, berhenti);
+  }
+}
